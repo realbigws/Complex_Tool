@@ -1,0 +1,27 @@
+----------------------------------
+Complex_Contact v1.00 (2014_09_14)
+----------------------------------
+
+1. in the output file, both ATOM and SEQRES length is provided, see below example:
+
+==================
+# 1colA  197  204 : intra chain contact
+   7  104
+   8   49
+   8  104
+...
+
+# 1colA  197  204 <-> 1colB  197  204 : inter chain contact
+  28   28
+  28   29
+  28   31
+...
+=================
+
+2. the contact residue starts from 1
+
+3. 'PDB_To_SEQ_miss' is for extracting the amino acid given a PDB file containing 'MISS' tag.
+
+
+
+

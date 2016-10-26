@@ -1,0 +1,21 @@
+======
+Usage:
+======
+
+./Complex_Contact <complex_file> <contact_out>
+                <CAorCB> <radius> <resi_thres>
+[note]: complex_file should be official 4-digit PDB file.
+[note]: CAorCB, use CA [=1] or CB [=0] to calculate contact.
+        radius, within the radius for contact. (set to 8.0)
+        resi_thres, inner contact residue separation (set to 6)
+[note]: in this version, we consider MISS residue with repect to SEQRES
+
+
+================
+Running example:
+================
+
+./Complex_Contact 1col.pdb 1col.contact 1 8.0 6
+
+
+
