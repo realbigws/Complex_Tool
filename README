@@ -1,3 +1,55 @@
+====================
+Complex_Tool (v1.00)
+date: 2016.10.25
+====================
+
+Title:
+Extract monomer and contact information from complex PDB file 
+
+Author: 
+Sheng Wang 
+
+Contact email: 
+realbigws@gmail.com 
+
+--------------------------------------------------------
+
+
+=========
+Abstract:
+=========
+
+1. Convert official PDB to all its monomers, and extract all contact information including inter-molecule as well as intra-molecule
+   e.g., ./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
+
+
+
+========
+Install:
+========
+
+1. download the package
+
+git clone --recursive https://github.com/realbigws/Complex_Tool
+cd Complex_Tool/
+
+--------------
+
+2. compile
+
+cd source_code/
+	make
+cd ../
+
+--------------
+
+3. update the package
+
+git pull
+git submodule foreach --recursive git pull origin master
+
+
+
 ======
 Usage:
 ======
@@ -11,11 +63,13 @@ Usage:
 [note]: in this version, we consider MISS residue with repect to SEQRES
 
 
+
 ================
 Running example:
 ================
 
 ./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
 
+[note]: the generated three files, say 1col.contact, 1colA.pdb, and 1colB.pdb should be exactly the same as their counterparts in example/
 
 
