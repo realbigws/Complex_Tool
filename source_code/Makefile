@@ -6,15 +6,18 @@ CXX = g++
 FLAG = -O3
 SHELL :=/bin/bash
 
-PDBToolDir = ./Complex_Tool_src
-PDBToolEXE = /Complex_Tool
+ComplexToolDir = ./Complex_Tool_src
+ComplexToolEXE = /Complex_Tool
 
-all: PDB_Tool
+all: Complex_Tool PDB_To_SEQ_miss
 
-PDB_Tool:
-	cd $(PDBToolDir)&&make
-	mv ${PDBToolDir}$(PDBToolEXE) ../
+Complex_Tool:
+	cd $(ComplexToolDir)&&make
+	mv ${ComplexToolDir}$(ComplexToolEXE) ../
 
+PDB_To_SEQ_miss:
+	${CXX} PDB_To_SEQ_miss.cpp ${FLAG} -o PDB_To_SEQ_miss
+	mv PDB_To_SEQ_miss ../ 
 
 # clean all the temp files
 clean:

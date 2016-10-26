@@ -2,8 +2,8 @@
 Usage:
 ======
 
-./Complex_Contact <complex_file> <contact_out>
-                <CAorCB> <radius> <resi_thres>
+./Complex_Tool <complex_file> <contact_out>
+               <CAorCB> <radius> <resi_thres>
 [note]: complex_file should be official 4-digit PDB file.
 [note]: CAorCB, use CA [=1] or CB [=0] to calculate contact.
         radius, within the radius for contact. (set to 8.0)
@@ -15,7 +15,7 @@ Usage:
 Running example:
 ================
 
-./Complex_Contact 1col.pdb 1col.contact 1 8.0 6
+./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
 
 
 

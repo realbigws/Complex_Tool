@@ -1,4 +1,5 @@
 #include <sstream>
+#include <algorithm>
 #include "PDB_Chain_Fold.h"
 #include "Mol_File.h"
 #include "getopt.h"
@@ -796,7 +797,11 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 	//chain load
 	vector <PDB_Chain> chains;
 	int retv=mol_input.PDB_read_pdb_file(complex_file,chains);
-	if(retv<0)return; //failed
+	if(retv<0)
+	{
+		fprintf(stderr,"complex_file %s failed to open or format bad. \n",complex_file.c_str());
+		return; //failed
+	}
 
 	//seqres load
 	int i,j,k;
@@ -994,13 +999,13 @@ int main(int argc, char** argv)
 		if(argc<6)
 		{
 			fprintf(stderr,"Version 1.00 \n");
-			fprintf(stderr,"Complex_Contact <complex_file> <contact_out> \n");
-			fprintf(stderr,"                <CAorCB> <radius> <resi_thres> \n");
-			fprintf(stderr,"[note]: complex_file should be official 4-digit PDB file. \n");
-			fprintf(stderr,"[note]: CAorCB, use CA [=1] or CB [=0] to calculate contact. \n");
-			fprintf(stderr,"        radius, within the radius for contact. (set to 8.0) \n");
-			fprintf(stderr,"        resi_thres, inner contact residue separation (set to 6) \n");
-			fprintf(stderr,"[note]: in this version, we consider MISS residue with repect to SEQRES \n");
+			fprintf(stderr,"Complex_Tool <complex_file> <contact_out> \n");
+			fprintf(stderr,"             <CAorCB> <radius> <resi_thres> \n");
+			fprintf(stderr,"[note1]: complex_file should be official 4-digit PDB file. \n");
+			fprintf(stderr,"[note2]: CAorCB, use CA [=1] or CB [=0] to calculate contact. \n");
+			fprintf(stderr,"         radius, within the radius for contact. (set to 8.0) \n");
+			fprintf(stderr,"         resi_thres, inner contact residue separation (set to 6) \n");
+			fprintf(stderr,"[note3]: in this version, we consider MISS residue with repect to SEQRES \n");
 			exit(-1);
 		}
 		//read

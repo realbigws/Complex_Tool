@@ -1,7 +1,7 @@
 CXX = g++
 #CCFLAGS = -O3 -Wall -ffast-math -static
 CCFLAGS = -O3
-OBJ = Utility.o Computation_Utility.o Confo_Back.o Confo_Beta.o Confo_Lett.o Acc_Surface.o getopt.o Hydro_Bond.o  Mol_File.o Mol_Ori.o Mol_Out.o PDB_Utility.o Backbone_Sidechain.o PDB_Residue.o PDB_Chain.o PDB_Chain_Fold.o PDB_File.o PhiPsi_Trans.o XYZ_DBT.o XYZ.o PDB_Tool.o
+OBJ = Utility.o Computation_Utility.o Confo_Back.o Confo_Beta.o Confo_Lett.o Acc_Surface.o getopt.o Hydro_Bond.o Mol_File.o Mol_Ori.o Mol_Out.o PDB_Utility.o Backbone_Sidechain.o PDB_Residue.o PDB_Chain.o PDB_Chain_Fold.o PDB_File.o PhiPsi_Trans.o XYZ_DBT.o XYZ.o Complex_Tool.o
 
 make: $(OBJ)
 	${CXX} $(CCFLAGS)  -o Complex_Tool $(OBJ)
@@ -23,8 +23,8 @@ getopt.o  : getopt.h
 	${CXX} ${CCFLAGS} -c getopt.cpp
 Hydro_Bond.o  : Hydro_Bond.h
 	${CXX} ${CCFLAGS} -c Hydro_Bond.cpp
-PDB_Tool.o  :
-	${CXX} ${CCFLAGS} -c PDB_Tool.cpp
+Complex_Tool.o  :
+	${CXX} ${CCFLAGS} -c Complex_Tool.cpp
 Mol_File.o  : Mol_File.h
 	${CXX} ${CCFLAGS} -c Mol_File.cpp
 Mol_Ori.o  : Mol_Ori.h
