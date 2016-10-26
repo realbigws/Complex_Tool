@@ -19,7 +19,8 @@ realbigws@gmail.com
 Abstract:
 =========
 
-1. Convert official PDB to all its monomers, and extract all contact information including inter-molecule as well as intra-molecule
+1. Convert official PDB to all its monomers, 
+   extract all contact information including inter-molecule as well as intra-molecule.
    e.g., ./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
 
 
