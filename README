@@ -55,14 +55,15 @@ git submodule foreach --recursive git pull origin master
 Usage:
 ======
 
-./Complex_Tool <complex_file> <contact_out>
-               <CAorCB> <radius> <resi_thres>
+Version 1.02 [2016-11-23]
+Complex_Tool <complex_file> <contact_out>
+             <CAorCB> <radius> <resi_thres>
 [note1]: complex_file should be official 4-digit PDB file.
-[note2]: CAorCB, use CA [=1] or CB [=0] to calculate contact.
+[note2]: CAorCB, use CA[1],CB[0],SC[-1],All[-2] to calculate contact.
          radius, within the radius for contact. (set to 8.0)
          resi_thres, inner contact residue separation (set to 6)
 [note3]: in this version, we consider MISS residue with repect to SEQRES
-
+         we also renumber the residue number sequentially according to SEQRES
 
 
 ================

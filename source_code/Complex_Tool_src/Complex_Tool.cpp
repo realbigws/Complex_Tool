@@ -1181,6 +1181,7 @@ int main(int argc, char** argv)
 			fprintf(stderr,"         radius, within the radius for contact. (set to 8.0) \n");
 			fprintf(stderr,"         resi_thres, inner contact residue separation (set to 6) \n");
 			fprintf(stderr,"[note3]: in this version, we consider MISS residue with repect to SEQRES \n");
+			fprintf(stderr,"         we also renumber the residue number sequentially according to SEQRES \n");
 			exit(-1);
 		}
 		//read
