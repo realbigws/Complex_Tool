@@ -503,6 +503,10 @@ void Extract_Mapping_PDB(string &seqres,vector <int> &mapping,
 			residue.set_AA(seqres[i]);
 			string tmp_rec_str=tmp_rec;
 			residue.set_PDB_residue_number(tmp_rec_str);
+			//assign missing
+			XYZ xyz=-99999.0;
+			residue.PDB_residue_backbone_initialize('G');
+			residue.set_backbone_atom( 1,xyz );
 			output[i]=residue;
 		}
 		else
@@ -650,8 +654,98 @@ int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID) //output f
 
 
 //================== All_Chain_Process =============//__110530__//
+//-> calculate Sidechain Center (SC)
+void Calculate_Sidechain_Center(PDB_Residue &PDB, XYZ &sc_center)
+{
+	int k;
+	int number;
+	XYZ xyz;
+	char amino=PDB.get_AA();
+	//check 'G'
+	if(amino=='G')
+	{
+		PDB.get_backbone_atom(1,xyz);
+		sc_center=xyz;
+		return;
+	}
+
+	//sidechain_out
+	int count=0;
+	sc_center=0;
+	number=PDB.get_sidechain_totnum();
+	for(k=0;k<number;k++)
+	{
+		//get_sidechain
+		if(PDB.get_sidechain_part_index(k)==0)continue;
+		PDB.get_sidechain_atom(k,xyz);
+		sc_center+=xyz;
+		count++;
+	}
+	if(count==0)
+	{
+		PDB.get_backbone_atom(1,xyz);
+		sc_center=xyz;
+	}
+	else sc_center/=count;
+}
+
+//-> collect all atoms from PDB_Residue
+void Cllect_AllAtoms_from_PDB(PDB_Residue &PDB, vector <XYZ> &output_xyz)
+{
+	int k;
+	int number;
+	XYZ xyz;
+	char amino=PDB.get_AA();
+	output_xyz.clear();
+	//backbone_out
+	number=PDB.get_backbone_totnum();  //this value should be 4
+	for(k=0;k<number;k++)
+	{
+		//get_backbone
+		if(PDB.get_backbone_part_index(k)==0)continue;
+		PDB.get_backbone_atom(k,xyz);
+		output_xyz.push_back(xyz);
+	}
+	//sidechain_out
+	if(amino=='G')return;
+	number=PDB.get_sidechain_totnum();
+	for(k=0;k<number;k++)
+	{
+		//get_sidechain
+		if(PDB.get_sidechain_part_index(k)==0)continue;
+		PDB.get_sidechain_atom(k,xyz);
+		output_xyz.push_back(xyz);
+	}
+}
+
+//-> min distance square for PDB version
+double PDB_Distance_Square(PDB_Residue &r1, PDB_Residue &r2)
+{
+	//-> collect all atoms from PDB_Residue
+	vector <XYZ> out_xyz_1;
+	vector <XYZ> out_xyz_2;
+	Cllect_AllAtoms_from_PDB(r1, out_xyz_1);
+	Cllect_AllAtoms_from_PDB(r2, out_xyz_2);
+	//-> calculate minimal distance square
+	int i,j;
+	int n1=(int)out_xyz_1.size();
+	int n2=(int)out_xyz_2.size();
+	double min_dist2=999999;
+	double dist2;
+	for(i=0;i<n1;i++)
+	{
+		for(j=0;j<n2;j++)
+		{
+			dist2=out_xyz_1[i].distance_square(out_xyz_2[j]);
+			if(dist2<min_dist2)min_dist2=dist2;
+		}
+	}
+	//return
+	return min_dist2;
+}
+
 //-> Compare chain1 and chain2
-int Compare_Chain1_and_Chain2(vector <XYZ> & chain1, vector <XYZ> & chain2,
+int Compare_Chain1_and_Chain2_XYZ(vector <XYZ> & chain1, vector <XYZ> & chain2,
 	double r_cut,vector < pair <int,int> > & result)
 {
 	int i,j;
@@ -670,6 +764,7 @@ int Compare_Chain1_and_Chain2(vector <XYZ> & chain1, vector <XYZ> & chain2,
 		{
 			//check miss
 			if(chain2[j].X==-99999.0)continue;
+			//calc distance
 			dist2=chain1[i].distance_square(chain2[j]);
 			if(dist2<thres2)
 			{
@@ -680,8 +775,42 @@ int Compare_Chain1_and_Chain2(vector <XYZ> & chain1, vector <XYZ> & chain2,
 	}
 	return count;
 }
+int Compare_Chain1_and_Chain2_PDB(vector <PDB_Residue> & chain1, vector <PDB_Residue> & chain2,
+	double r_cut,vector < pair <int,int> > & result)
+{
+	int i,j;
+	int ll=(int)chain1.size();
+	int pl=(int)chain2.size();
+	//distance check
+	XYZ xyz;
+	double dist2;
+	double thres2=r_cut*r_cut;
+	result.clear();
+	int count=0;
+	for(i=0;i<ll;i++)
+	{
+		//check miss
+		chain1[i].get_backbone_atom(1,xyz);
+		if(xyz.X==-99999.0)continue;
+		for(j=0;j<pl;j++)
+		{
+			//check miss
+			chain2[j].get_backbone_atom(1,xyz);
+			if(xyz.X==-99999.0)continue;
+			//calc distance
+			dist2=PDB_Distance_Square(chain1[i],chain2[j]);
+			if(dist2<thres2)
+			{
+				result.push_back(pair<int,int>(i,j));
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
 //-> Compare inner chain
-int Compare_Inner_Chain(vector <XYZ> & chain, double r_cut, int resi_gap,
+int Compare_Inner_Chain_XYZ(vector <XYZ> & chain, double r_cut, int resi_gap,
 	vector < pair <int,int> > & result)
 {
 	int i,j;
@@ -700,7 +829,9 @@ int Compare_Inner_Chain(vector <XYZ> & chain, double r_cut, int resi_gap,
 		{
 			//check miss
 			if(chain[j].X==-99999.0)continue;
+			//check separation
 			if(abs(i-j)<resi_gap)continue;
+			//calc distance
 			dist2=chain[i].distance_square(chain[j]);
 			if(dist2<thres2)
 			{
@@ -711,7 +842,41 @@ int Compare_Inner_Chain(vector <XYZ> & chain, double r_cut, int resi_gap,
 	}
 	return count;
 }
-
+int Compare_Inner_Chain_PDB(vector <PDB_Residue> & chain, double r_cut, int resi_gap,
+	vector < pair <int,int> > & result)
+{
+	int i,j;
+	int ll=(int)chain.size();
+	int pl=(int)chain.size();
+	//distance check
+	XYZ xyz;
+	double dist2;
+	double thres2=r_cut*r_cut;
+	result.clear();
+	int count=0;
+	for(i=0;i<ll;i++)
+	{
+		//check miss
+		chain[i].get_backbone_atom(1,xyz);
+		if(xyz.X==-99999.0)continue;
+		for(j=0;j<pl;j++)
+		{
+			//check miss
+			chain[j].get_backbone_atom(1,xyz);
+			if(xyz.X==-99999.0)continue;
+			//check separation
+			if(abs(i-j)<resi_gap)continue;
+			//calc distance
+			dist2=PDB_Distance_Square(chain[i],chain[j]);
+			if(dist2<thres2)
+			{
+				result.push_back(pair<int,int>(i,j));
+				count++;
+			}
+		}
+	}
+	return count;
+}
 
 
 //=================== Get Missing SEQRES !!!!! ===================//__2014_09_15__//
@@ -874,11 +1039,11 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 			ins_[k]=pdbind_[5];
 			tag_[k]=' ';
 			//-> get xyz
-			if(CAorCB==1)   //-> get CA
+			if(CAorCB==1)       //-> get CA
 			{
 				residue.get_backbone_atom(1,in_xyz[k]);
 			}
-			else            //-> get CB
+			else if(CAorCB==0)  //-> get CB
 			{
 				if(residue.get_sidechain_part_index(0)==0)
 				{
@@ -888,6 +1053,14 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 				{
 					residue.get_sidechain_atom(0,in_xyz[k]);
 				}
+			}
+			else if(CAorCB==-1) //-> Sidechain Center
+			{
+				Calculate_Sidechain_Center(residue, in_xyz[k]);
+			}
+			else            //-> dummy record
+			{
+				in_xyz[k]=0;
 			}
 			//-> get pdb_residue
 			in_pdb[k]=residue;
@@ -928,7 +1101,8 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 		chain=pdb_chain.get_chain_id();
 		//-> get data
 		vector < pair <int,int> >  contact_inner;
-		Compare_Inner_Chain(xyz_rec[i], radius, resi_thres, contact_inner);
+		if(CAorCB>=-1)Compare_Inner_Chain_XYZ(xyz_rec[i], radius, resi_thres, contact_inner);
+		else Compare_Inner_Chain_PDB(pdb_rec[i], radius, resi_thres, contact_inner);
 		//-> output data
 		fprintf(fp,"# %s%c %4d %4d : intra chain contact\n",pdb_nam.c_str(),chain,moln,relmoln);
 		int size=(int)contact_inner.size();
@@ -958,7 +1132,8 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 			char chain2=pdb_chain.get_chain_id();
 			//-> get data
 			vector < pair <int,int> >  contact_inter;
-			Compare_Chain1_and_Chain2(xyz_rec[i], xyz_rec[j],radius,contact_inter);
+			if(CAorCB>=-1)Compare_Chain1_and_Chain2_XYZ(xyz_rec[i], xyz_rec[j],radius,contact_inter);
+			else Compare_Chain1_and_Chain2_PDB(pdb_rec[i], pdb_rec[j],radius,contact_inter);
 			//-> output data
 			fprintf(fp,"# %s%c %4d %4d <-> %s%c %4d %4d : inter chain contact\n",
 				pdb_nam.c_str(),chain1,moln1,relmoln1,pdb_nam.c_str(),chain2,moln2,relmoln2);
@@ -998,11 +1173,11 @@ int main(int argc, char** argv)
 	{
 		if(argc<6)
 		{
-			fprintf(stderr,"Version 1.00 \n");
+			fprintf(stderr,"Version 1.02 [2016-11-23] \n");
 			fprintf(stderr,"Complex_Tool <complex_file> <contact_out> \n");
 			fprintf(stderr,"             <CAorCB> <radius> <resi_thres> \n");
 			fprintf(stderr,"[note1]: complex_file should be official 4-digit PDB file. \n");
-			fprintf(stderr,"[note2]: CAorCB, use CA [=1] or CB [=0] to calculate contact. \n");
+			fprintf(stderr,"[note2]: CAorCB, use CA[1],CB[0],SC[-1],All[-2] to calculate contact.\n");
 			fprintf(stderr,"         radius, within the radius for contact. (set to 8.0) \n");
 			fprintf(stderr,"         resi_thres, inner contact residue separation (set to 6) \n");
 			fprintf(stderr,"[note3]: in this version, we consider MISS residue with repect to SEQRES \n");
