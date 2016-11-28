@@ -499,14 +499,14 @@ void Extract_Mapping_PDB(string &seqres,vector <int> &mapping,
 		{
 			//get pdbind
 			sprintf(tmp_rec,"%c%4d!",Chain_ID,i+1); //-> we start from zero !!
-			//record
-			residue.set_AA(seqres[i]);
-			string tmp_rec_str=tmp_rec;
-			residue.set_PDB_residue_number(tmp_rec_str);
 			//assign missing
 			XYZ xyz=-99999.0;
 			residue.PDB_residue_backbone_initialize('G');
 			residue.set_backbone_atom( 1,xyz );
+			//assign residue name
+			residue.set_AA(seqres[i]);
+			string tmp_rec_str=tmp_rec;
+			residue.set_PDB_residue_number(tmp_rec_str);
 			output[i]=residue;
 		}
 		else
