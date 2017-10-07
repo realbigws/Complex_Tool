@@ -1263,7 +1263,7 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 //---------- usage ---------//
 void Usage() 
 {
-	fprintf(stderr,"Version: 1.03 [2017-10-07 \n");
+	fprintf(stderr,"Version: 1.03 [2017-10-07] \n");
 	fprintf(stderr,"Complex_Tool -i complex_file -o contact_out [-m mode] \n");
 	fprintf(stderr,"             [-c CAorCB] [-r radius] [-R resi_thres] \n");
 	fprintf(stderr,"Usage : \n\n");
