@@ -82,7 +82,7 @@ Running example:
 
 ./Complex_Tool -i example/1col.pdb -o 1col.contact -m 2 -c 0 -r 8 -R 6 
 
-[note]: the generated three files, say 1col.contact, 1col(X).pdb, 1col(X).con, and 1col_A_B.con 
+[note]: the generated three files, say 1col.contact, 1col(X).pdb, 1col(X).con, and 1col_A_B.con, 1col_B_A.con 
         should be exactly the same as their counterparts in example/
 
 

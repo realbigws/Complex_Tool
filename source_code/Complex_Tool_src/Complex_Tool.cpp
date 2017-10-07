@@ -1189,7 +1189,7 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 		//-> output additional contact data
 		if(mode==1 || mode==2)
 		{
-			//-> output PDB in 'MISS' format
+			//-> output contact/distance map in matrix format
 			string out_file=pdb_nam+chain+".con";
 			FILE *ff=fopen(out_file.c_str(),"wb");
 			if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[i],xyz_rec[i]);
@@ -1231,12 +1231,22 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 			//-> output additional contact data
 			if(mode==1 || mode==2)
 			{
-				//-> output PDB in 'MISS' format
-				string out_file=pdb_nam+"_"+chain1+"_"+chain2+".con";
-				FILE *ff=fopen(out_file.c_str(),"wb");
-				if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[i],xyz_rec[j]);
-				else Output_PDB_Miss_contact(ff,pdb_rec[i],pdb_rec[j]);
-				fclose(ff);
+				//-> output contact/distance map in matrix format
+				{
+					string out_file=pdb_nam+"_"+chain1+"_"+chain2+".con";
+					FILE *ff=fopen(out_file.c_str(),"wb");
+					if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[i],xyz_rec[j]);
+					else Output_PDB_Miss_contact(ff,pdb_rec[i],pdb_rec[j]);
+					fclose(ff);
+				}
+				//-> output contact/distance map in matrix format
+				{
+					string out_file=pdb_nam+"_"+chain2+"_"+chain1+".con";
+					FILE *ff=fopen(out_file.c_str(),"wb");
+					if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[j],xyz_rec[i]);
+					else Output_PDB_Miss_contact(ff,pdb_rec[j],pdb_rec[i]);
+					fclose(ff);
+				}
 			}
 		}
 	}
