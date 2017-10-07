@@ -1,8 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <iostream>
+#include <fstream>
 #include <sstream>
+#include <vector>
+#include <string>
 #include <algorithm>
+#include <getopt.h>
 #include "PDB_Chain_Fold.h"
 #include "Mol_File.h"
-#include "getopt.h"
 using namespace std;
 
 
@@ -522,6 +530,125 @@ void Extract_Mapping_PDB(string &seqres,vector <int> &mapping,
 	}
 }
 
+
+//------------------ min distance square for PDB version ------------//
+//--> collect all atoms from PDB_Residue
+void Cllect_AllAtoms_from_PDB(PDB_Residue &PDB, vector <XYZ> &output_xyz)
+{
+	int k;
+	int number;
+	XYZ xyz;
+	char amino=PDB.get_AA();
+	output_xyz.clear();
+	//backbone_out
+	number=PDB.get_backbone_totnum();  //this value should be 4
+	for(k=0;k<number;k++)
+	{
+		//get_backbone
+		if(PDB.get_backbone_part_index(k)==0)continue;
+		PDB.get_backbone_atom(k,xyz);
+		output_xyz.push_back(xyz);
+	}
+	//sidechain_out
+	if(amino=='G')return;
+	number=PDB.get_sidechain_totnum();
+	for(k=0;k<number;k++)
+	{
+		//get_sidechain
+		if(PDB.get_sidechain_part_index(k)==0)continue;
+		PDB.get_sidechain_atom(k,xyz);
+		output_xyz.push_back(xyz);
+	}
+}
+//---> main calculate
+double PDB_Distance_Square(PDB_Residue &r1, PDB_Residue &r2)
+{
+	//-> collect all atoms from PDB_Residue
+	vector <XYZ> out_xyz_1;
+	vector <XYZ> out_xyz_2;
+	Cllect_AllAtoms_from_PDB(r1, out_xyz_1);
+	Cllect_AllAtoms_from_PDB(r2, out_xyz_2);
+	//-> calculate minimal distance square
+	int i,j;
+	int n1=(int)out_xyz_1.size();
+	int n2=(int)out_xyz_2.size();
+	double min_dist2=999999;
+	double dist2;
+	for(i=0;i<n1;i++)
+	{
+		for(j=0;j<n2;j++)
+		{
+			dist2=out_xyz_1[i].distance_square(out_xyz_2[j]);
+			if(dist2<min_dist2)min_dist2=dist2;
+		}
+	}
+	//return
+	return min_dist2;
+}
+
+
+//--------- output inter/intra molecule distance map --------------//
+void Output_XYZ_Miss_contact(FILE *fp,
+	vector <XYZ> & chain1, vector <XYZ> & chain2)
+{
+	int i,j;
+	int ll=(int)chain1.size();
+	int pl=(int)chain2.size();
+	//distance output
+	for(i=0;i<ll;i++)
+	{
+		double distance;
+		for(j=0;j<pl;j++)
+		{
+			//calc distance
+			if(chain1[i].X==-99999.0 || chain2[j].X==-99999.0)
+			{
+				distance=-1.0;
+			}
+			else
+			{
+				distance=chain1[i].distance_square(chain2[j]);
+				distance=sqrt(distance);
+			}
+			//output
+			fprintf(fp,"%8.2f\t",distance);
+		}
+		fprintf(fp,"\n");
+	}
+}
+void Output_PDB_Miss_contact(FILE *fp,
+	vector <PDB_Residue> & chain1, vector <PDB_Residue> & chain2)
+{
+	int i,j;
+	int ll=(int)chain1.size();
+	int pl=(int)chain2.size();
+	//distance output
+	for(i=0;i<ll;i++)
+	{
+		double distance;
+		for(j=0;j<pl;j++)
+		{
+			//calc distance
+			XYZ xyz1,xyz2;
+			chain1[i].get_backbone_atom(1,xyz1);
+			chain2[j].get_backbone_atom(1,xyz2);
+			if(xyz1.X==-99999.0 || xyz2.X==-99999.0)
+			{
+				distance=-1.0;
+			}
+			else
+			{
+				distance=PDB_Distance_Square(chain1[i],chain2[j]);
+				distance=sqrt(distance);
+			}
+			//output
+			fprintf(fp,"%8.2f\t",distance);
+		}
+		fprintf(fp,"\n");
+	}
+}
+
+
 //--------- output PDB format with MISS --------------//__2014_09_15__//
 int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID) //output full-atom PDB file
 {
@@ -687,61 +814,6 @@ void Calculate_Sidechain_Center(PDB_Residue &PDB, XYZ &sc_center)
 		sc_center=xyz;
 	}
 	else sc_center/=count;
-}
-
-//-> collect all atoms from PDB_Residue
-void Cllect_AllAtoms_from_PDB(PDB_Residue &PDB, vector <XYZ> &output_xyz)
-{
-	int k;
-	int number;
-	XYZ xyz;
-	char amino=PDB.get_AA();
-	output_xyz.clear();
-	//backbone_out
-	number=PDB.get_backbone_totnum();  //this value should be 4
-	for(k=0;k<number;k++)
-	{
-		//get_backbone
-		if(PDB.get_backbone_part_index(k)==0)continue;
-		PDB.get_backbone_atom(k,xyz);
-		output_xyz.push_back(xyz);
-	}
-	//sidechain_out
-	if(amino=='G')return;
-	number=PDB.get_sidechain_totnum();
-	for(k=0;k<number;k++)
-	{
-		//get_sidechain
-		if(PDB.get_sidechain_part_index(k)==0)continue;
-		PDB.get_sidechain_atom(k,xyz);
-		output_xyz.push_back(xyz);
-	}
-}
-
-//-> min distance square for PDB version
-double PDB_Distance_Square(PDB_Residue &r1, PDB_Residue &r2)
-{
-	//-> collect all atoms from PDB_Residue
-	vector <XYZ> out_xyz_1;
-	vector <XYZ> out_xyz_2;
-	Cllect_AllAtoms_from_PDB(r1, out_xyz_1);
-	Cllect_AllAtoms_from_PDB(r2, out_xyz_2);
-	//-> calculate minimal distance square
-	int i,j;
-	int n1=(int)out_xyz_1.size();
-	int n2=(int)out_xyz_2.size();
-	double min_dist2=999999;
-	double dist2;
-	for(i=0;i<n1;i++)
-	{
-		for(j=0;j<n2;j++)
-		{
-			dist2=out_xyz_1[i].distance_square(out_xyz_2[j]);
-			if(dist2<min_dist2)min_dist2=dist2;
-		}
-	}
-	//return
-	return min_dist2;
 }
 
 //-> Compare chain1 and chain2
@@ -950,7 +1022,7 @@ void Read_SEQRES_From_Orig_PDB(string &pdbfile,char chainID,string &out_str)
 
 
 //============================ main process ======================//
-void Main_Process(string &complex_file,string &contact_out, int CAorCB, double radius, int resi_thres)
+void Main_Process(string &complex_file,string &contact_out, int CAorCB, double radius, int resi_thres,int mode)
 {
 	//get name
 	string pdb_nam;
@@ -1114,6 +1186,16 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 			fprintf(fp,"%4d %4d\n",ii+1,jj+1);
 		}
 		fprintf(fp,"\n");
+		//-> output additional contact data
+		if(mode==1 || mode==2)
+		{
+			//-> output PDB in 'MISS' format
+			string out_file=pdb_nam+chain+".con";
+			FILE *ff=fopen(out_file.c_str(),"wb");
+			if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[i],xyz_rec[i]);
+			else Output_PDB_Miss_contact(ff,pdb_rec[i],pdb_rec[i]);
+			fclose(ff);
+		}
 	}
 	//calculate inter contact
 	for(i=0;i<chain_size;i++)
@@ -1146,52 +1228,123 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 				fprintf(fp,"%4d %4d\n",ii+1,jj+1);
 			}
 			fprintf(fp,"\n");
+			//-> output additional contact data
+			if(mode==1 || mode==2)
+			{
+				//-> output PDB in 'MISS' format
+				string out_file=pdb_nam+"_"+chain1+"_"+chain2+".con";
+				FILE *ff=fopen(out_file.c_str(),"wb");
+				if(CAorCB>=-1)Output_XYZ_Miss_contact(ff,xyz_rec[i],xyz_rec[j]);
+				else Output_PDB_Miss_contact(ff,pdb_rec[i],pdb_rec[j]);
+				fclose(ff);
+			}
 		}
 	}
 	fclose(fp);
 
 	//============ output each structure in 'MISS' foramt ===========//
-	for(i=0;i<chain_size;i++)
+	if(mode==0 || mode==2)
 	{
-		//-> pick chain
-		pdb_chain=chains[i];
-		moln=pdb_chain.get_length();
-		chain=pdb_chain.get_chain_id();
-		//-> output PDB in 'MISS' format
-		string out_file=pdb_nam+chain+".pdb";
-		fp=fopen(out_file.c_str(),"wb");
-		Output_PDB_Miss(fp,pdb_rec[i],chain);
-		fclose(fp);
+		for(i=0;i<chain_size;i++)
+		{
+			//-> pick chain
+			pdb_chain=chains[i];
+			moln=pdb_chain.get_length();
+			chain=pdb_chain.get_chain_id();
+			//-> output PDB in 'MISS' format
+			string out_file=pdb_nam+chain+".pdb";
+			fp=fopen(out_file.c_str(),"wb");
+			Output_PDB_Miss(fp,pdb_rec[i],chain);
+			fclose(fp);
+		}
 	}
 }
 
+//---------- usage ---------//
+void Usage() 
+{
+	fprintf(stderr,"Version: 1.03 [2017-10-07 \n");
+	fprintf(stderr,"Complex_Tool -i complex_file -o contact_out [-m mode] \n");
+	fprintf(stderr,"             [-c CAorCB] [-r radius] [-R resi_thres] \n");
+	fprintf(stderr,"Usage : \n\n");
+	fprintf(stderr,"-i complex_file :      Input complex official PDB file in 4-char. \n");
+	fprintf(stderr,"-o contact_out  :      Output file for intra/inter molecular contact. \n");
+	fprintf(stderr,"-m mode         :     [0] output '.pdb' file for each chain only. \n");
+	fprintf(stderr,"                       1  output '.con' matrix for intra/inter chain \n");
+	fprintf(stderr,"                      -1  not output any additional file; 2 output all \n");
+	fprintf(stderr,"-c CAorCB       :      use CA[1],CB[0],SC[-1],All[-2] to calculate contact. \n");
+	fprintf(stderr,"                       by default, we use 0 to use CB-CB to define contact. \n");
+	fprintf(stderr,"-r radius       :      within the radius for contact. (set to 8.0 by default)\n");
+	fprintf(stderr,"-R resi_thres   :      inner contact residue separation (set to 6 by default)\n");
+	fprintf(stderr,"-----------------------------------------------------------------------------\n");
+	fprintf(stderr,"[note]: in this version, we consider MISS residue with repect to SEQRES \n");
+	fprintf(stderr,"        we also renumber the residue number sequentially according to SEQRES \n");
+}
 
 //============== main ===============//
 int main(int argc, char** argv)
 {
 	//---- Complex_To_ContactMap ---//process the homomer's contact for all other chains with the first one
 	{
-		if(argc<6)
+		if(argc<3)
 		{
-			fprintf(stderr,"Version 1.02 [2016-11-23] \n");
-			fprintf(stderr,"Complex_Tool <complex_file> <contact_out> \n");
-			fprintf(stderr,"             <CAorCB> <radius> <resi_thres> \n");
-			fprintf(stderr,"[note1]: complex_file should be official 4-digit PDB file. \n");
-			fprintf(stderr,"[note2]: CAorCB, use CA[1],CB[0],SC[-1],All[-2] to calculate contact.\n");
-			fprintf(stderr,"         radius, within the radius for contact. (set to 8.0) \n");
-			fprintf(stderr,"         resi_thres, inner contact residue separation (set to 6) \n");
-			fprintf(stderr,"[note3]: in this version, we consider MISS residue with repect to SEQRES \n");
-			fprintf(stderr,"         we also renumber the residue number sequentially according to SEQRES \n");
+			Usage();
 			exit(-1);
 		}
-		//read
-		string complex_file=argv[1];
-		string contact_out=argv[2];
-		int CAorCB=atoi(argv[3]);
-		double radius=atof(argv[4]);
-		int resi_thres=atoi(argv[5]);
+		//required input
+		string complex_file="";
+		string contact_out="";
+		//optional input
+		int mode=0;
+		int CAorCB=0;
+		double radius=8.0;
+		int resi_thres=6;
+
+		//command-line arguments process
+		extern char* optarg;
+		char c = 0;
+		while ((c = getopt(argc, argv, "i:o:m:c:r:R:")) != EOF) 
+		{
+			switch (c) 
+			{
+				case 'i':
+					complex_file = optarg;
+					break;
+				case 'o':
+					contact_out = optarg;
+					break;
+				case 'm':
+					mode = atoi(optarg);
+					break;
+				case 'c':
+					CAorCB = atoi(optarg);
+					break;
+				case 'r':
+					radius = atof(optarg);
+					break;
+				case 'R':
+					resi_thres = atoi(optarg);
+					break;
+				default:
+					Usage();
+					exit(-1);
+			}
+		}
+
+		//---- check required input ----//
+		if(complex_file=="")
+		{
+			fprintf(stderr,"complex_file is null !!\n");
+			exit(-1);
+		}
+		if(contact_out=="")
+		{
+			fprintf(stderr,"contact_out is null !!\n");
+			exit(-1);
+		}
+
 		//calculate
-		Main_Process(complex_file,contact_out,CAorCB,radius,resi_thres);
+		Main_Process(complex_file,contact_out,CAorCB,radius,resi_thres,mode);
 		//exit
 		exit(0);
 	}

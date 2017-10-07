@@ -55,23 +55,50 @@ git submodule foreach --recursive git pull origin master
 Usage:
 ======
 
-Version 1.02 [2016-11-23]
-Complex_Tool <complex_file> <contact_out>
-             <CAorCB> <radius> <resi_thres>
-[note1]: complex_file should be official 4-digit PDB file.
-[note2]: CAorCB, use CA[1],CB[0],SC[-1],All[-2] to calculate contact.
-         radius, within the radius for contact. (set to 8.0)
-         resi_thres, inner contact residue separation (set to 6)
-[note3]: in this version, we consider MISS residue with repect to SEQRES
-         we also renumber the residue number sequentially according to SEQRES
+
+Version: 1.03 [2017-10-07
+Complex_Tool -i complex_file -o contact_out [-m mode]
+             [-c CAorCB] [-r radius] [-R resi_thres]
+Usage :
+
+-i complex_file :      Input complex official PDB file in 4-char.
+-o contact_out  :      Output file for intra/inter molecular contact.
+-m mode         :     [0] output '.pdb' file for each chain only.
+                       1  output '.con' matrix for intra/inter chain
+                      -1  not output any additional file; 2 output all
+-c CAorCB       :      use CA[1],CB[0],SC[-1],All[-2] to calculate contact.
+                       by default, we use 0 to use CB-CB to define contact.
+-r radius       :      within the radius for contact. (set to 8.0 by default)
+-R resi_thres   :      inner contact residue separation (set to 6 by default)
+-----------------------------------------------------------------------------
+[note]: in this version, we consider MISS residue with repect to SEQRES
+        we also renumber the residue number sequentially according to SEQRES
+
 
 
 ================
 Running example:
 ================
 
-./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
+./Complex_Tool -i example/1col.pdb -o 1col.contact -m 2 -c 0 -r 8 -R 6 
 
-[note]: the generated three files, say 1col.contact, 1colA.pdb, and 1colB.pdb should be exactly the same as their counterparts in example/
+[note]: the generated three files, say 1col.contact, 1col(X).pdb, 1col(X).con, and 1col_A_B.con 
+        should be exactly the same as their counterparts in example/
+
+
+
+============================
+Extract contact from matrix:
+============================
+
+1. extract raw sorted columns from the contact matrix:
+
+./MAT_To_Column example/1col_A_B.con raw_column 1
+
+
+2. exclue '-1' and retain only pairs within threshold:
+
+grep -v "\-1\.0" raw_column | awk '{if($NF<8.0){print $0}}' > contact_column
+
 
 
