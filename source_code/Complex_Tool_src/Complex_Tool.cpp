@@ -540,6 +540,14 @@ void Cllect_AllAtoms_from_PDB(PDB_Residue &PDB, vector <XYZ> &output_xyz)
 	XYZ xyz;
 	char amino=PDB.get_AA();
 	output_xyz.clear();
+	//hydrogen_out
+	number=PDB.hydro_rec.size();
+	for(k=0;k<number;k++)
+	{
+		//get_hydrogen
+		xyz=PDB.hydro_rec[k];
+		output_xyz.push_back(xyz);
+	}
 	//backbone_out
 	number=PDB.get_backbone_totnum();  //this value should be 4
 	for(k=0;k<number;k++)
@@ -650,7 +658,7 @@ void Output_PDB_Miss_contact(FILE *fp,
 
 
 //--------- output PDB format with MISS --------------//__2014_09_15__//
-int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID) //output full-atom PDB file
+int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID, int Hydro) //output full-atom PDB file
 {
 	int i,k;
 	string TER="TER                                                                             ";
@@ -754,6 +762,41 @@ int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID) //output f
 			}
 			fprintf(fp,"%s",output);
 		}
+
+		//--- OutHydr ---//start
+		if(Hydro==1)
+		{
+			vector <XYZ> hydro_out=PDB.hydro_rec;
+			int hydr_num=(int)hydro_out.size()<999?(int)hydro_out.size():999;
+			for(k=0;k<hydr_num;k++)
+			{
+				//get hydrogen name
+				char hname[5];
+				sprintf(hname,"H%-3d",k+1);
+				hname[4]='\0';
+				string hname_str=hname;
+				//get coordinate
+				xyz=hydro_out[k];
+				x=xyz.X;
+				y=xyz.Y;
+				z=xyz.Z;
+				//get others
+				numb=0;
+				rfactor=1;
+				temperature=20;
+				//output
+				{
+					sprintf(output,"ATOM  %5d %4s %3s %c%4s    %8.3f%8.3f%8.3f%6.2f%6.2f%s\n",
+						numb,hname_str.c_str(),dummyaa,Real_Chain,pdbind.c_str(),x,y,z,rfactor,temperature,buf.c_str());
+				}
+				//real_output//__110430__//
+				{
+					output[77]=output[12];
+				}
+				fprintf(fp,"%s",output);
+			}
+		}
+		//--- OutHydr ---//end
 
 		cur_pos++;
 		//terminal_process
@@ -1022,7 +1065,8 @@ void Read_SEQRES_From_Orig_PDB(string &pdbfile,char chainID,string &out_str)
 
 
 //============================ main process ======================//
-void Main_Process(string &complex_file,string &contact_out, int CAorCB, double radius, int resi_thres,int mode)
+void Main_Process(string &complex_file,string &contact_out, 
+	int CAorCB, double radius, int resi_thres,int mode, int Hydro)
 {
 	//get name
 	string pdb_nam;
@@ -1030,6 +1074,7 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 	//class
 	Mol_File mol_input;
 	mol_input.MODRES=1;
+	mol_input.HYDR_MODE=Hydro;   // [1: output hydrogen][0: don't out]
 
 	//chain load
 	vector <PDB_Chain> chains;
@@ -1264,7 +1309,7 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 			//-> output PDB in 'MISS' format
 			string out_file=pdb_nam+chain+".pdb";
 			fp=fopen(out_file.c_str(),"wb");
-			Output_PDB_Miss(fp,pdb_rec[i],chain);
+			Output_PDB_Miss(fp,pdb_rec[i],chain,Hydro);
 			fclose(fp);
 		}
 	}
@@ -1273,9 +1318,9 @@ void Main_Process(string &complex_file,string &contact_out, int CAorCB, double r
 //---------- usage ---------//
 void Usage() 
 {
-	fprintf(stderr,"Version: 1.03 [2017-10-07] \n");
+	fprintf(stderr,"Version: 1.04 [2017-10-08] \n");
 	fprintf(stderr,"Complex_Tool -i complex_file -o contact_out [-m mode] \n");
-	fprintf(stderr,"             [-c CAorCB] [-r radius] [-R resi_thres] \n");
+	fprintf(stderr,"             [-c CAorCB] [-r radius] [-R resi_thres] [-h Hydro] \n");
 	fprintf(stderr,"Usage : \n\n");
 	fprintf(stderr,"-i complex_file :      Input complex official PDB file in 4-char. \n");
 	fprintf(stderr,"-o contact_out  :      Output file for intra/inter molecular contact. \n");
@@ -1286,6 +1331,7 @@ void Usage()
 	fprintf(stderr,"                       by default, we use 0 to use CB-CB to define contact. \n");
 	fprintf(stderr,"-r radius       :      within the radius for contact. (set to 8.0 by default)\n");
 	fprintf(stderr,"-R resi_thres   :      inner contact residue separation (set to 6 by default)\n");
+	fprintf(stderr,"-h Hydro        :     [0] DO NOT consider hydrogen atoms; 1 for considering. \n");
 	fprintf(stderr,"-----------------------------------------------------------------------------\n");
 	fprintf(stderr,"[note]: in this version, we consider MISS residue with repect to SEQRES \n");
 	fprintf(stderr,"        we also renumber the residue number sequentially according to SEQRES \n");
@@ -1309,11 +1355,12 @@ int main(int argc, char** argv)
 		int CAorCB=0;
 		double radius=8.0;
 		int resi_thres=6;
+		int Hydro=0;
 
 		//command-line arguments process
 		extern char* optarg;
 		char c = 0;
-		while ((c = getopt(argc, argv, "i:o:m:c:r:R:")) != EOF) 
+		while ((c = getopt(argc, argv, "i:o:m:c:r:R:h:")) != EOF) 
 		{
 			switch (c) 
 			{
@@ -1335,6 +1382,9 @@ int main(int argc, char** argv)
 				case 'R':
 					resi_thres = atoi(optarg);
 					break;
+				case 'h':
+					Hydro = atoi(optarg);
+					break;
 				default:
 					Usage();
 					exit(-1);
@@ -1354,7 +1404,7 @@ int main(int argc, char** argv)
 		}
 
 		//calculate
-		Main_Process(complex_file,contact_out,CAorCB,radius,resi_thres,mode);
+		Main_Process(complex_file,contact_out,CAorCB,radius,resi_thres,mode,Hydro);
 		//exit
 		exit(0);
 	}
