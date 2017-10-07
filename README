@@ -56,7 +56,7 @@ Usage:
 ======
 
 
-Version: 1.03 [2017-10-07
+Version: 1.03 [2017-10-07]
 Complex_Tool -i complex_file -o contact_out [-m mode]
              [-c CAorCB] [-r radius] [-R resi_thres]
 Usage :
