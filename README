@@ -1,6 +1,6 @@
 ====================
-Complex_Tool (v1.03)
-date: 2017.10.07
+Complex_Tool (v1.04)
+date: 2017.10.08
 ====================
 
 Title:
@@ -21,7 +21,12 @@ Abstract:
 
 1. Convert official PDB to all its monomers, 
    extract all contact information including inter-molecule as well as intra-molecule.
-   e.g., ./Complex_Tool example/1col.pdb 1col.contact 1 8.0 6
+   e.g., ./Complex_Tool -i example/1col.pdb -o 1col.contact
+
+
+2. Output ground-truth inter/intra-molecule contacts with a variety of diffinitions,
+   such as (i) Cb-Cb<8A, (ii) All Heavy Atoms < 6A, or (iii) All Atoms (include H) < 5A
+   e.g., ./Complex_Tool -i example/2rex_AddH.pdb -o 2rex.contact -m -1 -c -2 -r 5 -h 1 
 
 
 
@@ -56,9 +61,9 @@ Usage:
 ======
 
 
-Version: 1.03 [2017-10-07]
+Version: 1.04 [2017-10-08]
 Complex_Tool -i complex_file -o contact_out [-m mode]
-             [-c CAorCB] [-r radius] [-R resi_thres]
+             [-c CAorCB] [-r radius] [-R resi_thres] [-h Hydro]
 Usage :
 
 -i complex_file :      Input complex official PDB file in 4-char.
@@ -70,6 +75,7 @@ Usage :
                        by default, we use 0 to use CB-CB to define contact.
 -r radius       :      within the radius for contact. (set to 8.0 by default)
 -R resi_thres   :      inner contact residue separation (set to 6 by default)
+-h Hydro        :     [0] DO NOT consider hydrogen atoms; 1 for considering.
 -----------------------------------------------------------------------------
 [note]: in this version, we consider MISS residue with repect to SEQRES
         we also renumber the residue number sequentially according to SEQRES
@@ -80,10 +86,21 @@ Usage :
 Running example:
 ================
 
+1. generate intra/inter-molecular contact, by the definition of Cb-Cb<8A
+
 ./Complex_Tool -i example/1col.pdb -o 1col.contact -m 2 -c 0 -r 8 -R 6 
 
 [note]: the generated three files, say 1col.contact, 1col(X).pdb, 1col(X).con, and 1col_A_B.con, 1col_B_A.con 
         should be exactly the same as their counterparts in example/
+
+
+-------------------------------
+
+2. generate intra/inter-molecular contact, by the definition of All Atoms (include Hydrogen) < 5A
+
+./Complex_Tool -i example/2rex_AddH.pdb -o 2rex.contact -m -1 -c -2 -r 5 -h 1
+
+[note]: the generated contact file: 2rex.contact should be the same as its counterpart in example/
 
 
 
