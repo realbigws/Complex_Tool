@@ -104,6 +104,16 @@ Running example:
 [note]: the generated contact file: 2rex.contact should be the same as its counterpart in example/
 
 
+-------------------------------
+
+3. generate local structural properties, such as SSE,ACC,CLE,etc.
+
+./Complex_Tool -i example/1col.pdb -o 1col.contact -F 7
+
+[note]: the generated files, namely '.miss', '.ami', '.sse', '.cle', '.acc', '.acc_value', '.feature' 
+        should be exactly the same as their counterparts in example/
+
+
 
 ============================
 Extract contact from matrix:
