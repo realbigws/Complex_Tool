@@ -121,12 +121,18 @@ Extract contact from matrix:
 
 1. extract raw sorted columns from the contact matrix:
 
-./MAT_To_Column example/1col_A_B.con raw_column 1
+util/MAT_To_Column example/1col_A_B.con raw_column 1
 
 
 2. exclue '-1' and retain only pairs within threshold:
 
 grep -v "\-1\.0" raw_column | awk '{if($NF<8.0){print $0}}' > contact_column
+
+
+3. convert distance matrix to contact matrix:
+
+util/DistMat_To_ContMat example/1col_A_B.con 8 > 1col_A_B.contact_matrix
+
 
 
 
