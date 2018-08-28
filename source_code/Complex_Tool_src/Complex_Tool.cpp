@@ -1138,6 +1138,35 @@ int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID, int Hydro)
 	if(len<=0)return -1;
 	Ini_Chain=Chain_ID;
 	if(Ini_Chain=='!'||Ini_Chain==-1||Ini_Chain=='_')Ini_Chain='_'; //put the chain from pdbind//__110230__//
+
+	//------ get HEAD and TAIL missing regions --------//__180827__//
+	vector <int> miss_region(len,0);
+	for(i=0;i<len;i++)
+	{
+		//init
+		PDB=mol[i];
+		PDB.get_PDB_residue_number(pdbind_);
+		if(pdbind_[5]=='!')miss_or_not=1;
+		else miss_or_not=0;
+		//record miss
+		if(miss_or_not==1)miss_region[i]=1;
+		else break;
+	}
+	for(i=len-1;i>=0;i--)
+	{
+		//init
+		PDB=mol[i];
+		PDB.get_PDB_residue_number(pdbind_);
+		if(pdbind_[5]=='!')miss_or_not=1;
+		else miss_or_not=0;
+		//record miss
+		if(miss_or_not==1)miss_region[i]=-1;
+		else break;
+	}
+	string HEAD="HEAD";
+	string TAIL="TAIL";
+	string BODY="MISS";
+
 	//process
 	cur_pos=0;
 	for(i=0;i<len;i++)
@@ -1156,8 +1185,11 @@ int Output_PDB_Miss(FILE *fp,vector <PDB_Residue> &mol,char Chain_ID, int Hydro)
 		//output miss
 		if(miss_or_not==1)
 		{
-			sprintf(output,"MISS             %3s %c%4s       0.000   0.000   0.000  0.00  0.00%s\n",
-				dummyaa,Real_Chain,pdbind.c_str(),buf.c_str());
+			string miss=BODY;
+			if(miss_region[i]==1)miss=HEAD;
+			else if(miss_region[i]==-1)miss=TAIL;
+			sprintf(output,"%s             %3s %c%4s       0.000   0.000   0.000  0.00  0.00%s\n",
+				miss.c_str(),dummyaa,Real_Chain,pdbind.c_str(),buf.c_str());
 			fprintf(fp,"%s",output);
 			continue;
 		}
