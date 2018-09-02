@@ -109,11 +109,11 @@ int PDB_To_SEQ(string &pdb,string &ami,char chain='_')
 		//check ATOM
 		if(len<4)continue;
 		temp=buf.substr(0,4);
-		if(temp!="ATOM"&&temp!="HETA"&&temp!="MISS")continue;
+		if(temp!="ATOM"&&temp!="HETA"&&temp!="MISS"&&temp!="HEAD"&&temp!="TAIL")continue;
 		string tag=temp;
 		//check CA
 		temp=buf.substr(13,2);
-		if(tag!="MISS"&&temp!="CA")continue;
+		if(tag!="MISS"&&tag!="HEAD"&&tag!="TAIL"&&temp!="CA")continue;
 		//chain
 		cur_chain=buf[21];
 		if(chain!='_')
